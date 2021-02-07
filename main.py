@@ -3,6 +3,7 @@ from tensorflow.keras import layers, models, datasets
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import defaultdict
 
 
 def load_mnist():
@@ -114,21 +115,34 @@ def baseline_shadow(input_shape, epochs, image_pool, label_pool):
 
 
 def train_attack(shadow_models, train_image_pool, train_label_pool, test_image_pool, test_label_pool):
-    train_vectors = []
-    train_labels = []
+    train_vectors_by_class = defaultdict(lambda: [])
+    train_labels_by_class = defaultdict(lambda: [])
     for i, model in enumerate(shadow_models):
         # predict in vectors for ith shadow model
         prediction = model.predict(train_image_pool[i])
-        pred_with_label = [(label, prediction[j]) for j, label in enumerate(train_label_pool[i])]
-        train_vectors += pred_with_label
-        train_labels += ['in']*len(prediction)
+        # pred_with_label = [(label, prediction[j], 'in') for j, label in enumerate(train_label_pool[i])]
+        for j, label in enumerate(train_label_pool[i]):
+            train_vectors_by_class[label].append(prediction[j])
+            train_labels_by_class[label].append(1)
         # predict out vectors for ith shadow model
         prediction = model.predict(test_image_pool[i])
-        pred_with_label = [(label, prediction[j]) for j, label in enumerate(test_label_pool[i])]
-        train_vectors += pred_with_label
-        train_labels += ['out'] * len(prediction)
-    print(train_labels)
+        # pred_with_label = [(label, prediction[j], 'out') for j, label in enumerate(test_label_pool[i])]
+        for j, label in enumerate(test_label_pool[i]):
+            train_vectors_by_class[label].append(prediction[j])
+            train_labels_by_class[label].append(0)
 
+    # train models per class
+    models_per_class = []
+    for i in range(0, 10):
+        model = models.Sequential()
+        model.add(layers.Dense(30, input_dim=10, activation='relu'))
+        model.add(layers.Dense(1, activation='sigmoid'))
+        model.compile(optimizer='adam',
+                      loss='binary_crossentropy',
+                      metrics=['accuracy'])
+        model.fit(np.array(train_vectors_by_class[i]), np.array(train_labels_by_class[i]), epochs=10)
+        models_per_class.append(model)
+    return models_per_class
 
 
 if __name__ == '__main__':
@@ -139,10 +153,10 @@ if __name__ == '__main__':
     input_shape = train_image.shape[1:]
     target_image_train, target_label_train, shadow_image_train, shadow_label_train = split_train_data(train_image, train_label, 10000, 50)
     shadow_image_test, shadow_label_test = split_test_data(test_image, test_label, 3000, 50)
-    baseline_target(input_shape, 8, target_image_train, target_label_train, test_image, test_label)
-    #shadow_models = baseline_shadow(input_shape, 8, shadow_image_train, shadow_label_train)
-    #print('Training the attack model:')
-    #train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
+    # baseline_target(input_shape, 8, target_image_train, target_label_train, test_image, test_label)
+    shadow_models = baseline_shadow(input_shape, 8, shadow_image_train, shadow_label_train)
+    print('Training the attack model:')
+    train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
     # info = tfds.builder('mnist').info
     # print(test)
     # fig = tfds.show_examples(train, info)
