@@ -45,14 +45,26 @@ def split_test_data(test_image, test_label, size, n):
     seed = np.random.randint(0, 10000)
     shadow_test_image = []
     shadow_test_label = []
+
+    # separate data for target model
+    np.random.seed(seed)
+    np.random.shuffle(test_image)
+    target_test_image = test_image[:size]
+    shadow_image_pool = test_image[:size]
+    np.random.seed(seed)
+    np.random.shuffle(test_label)
+    target_test_label = test_label[:size]
+    shadow_label_pool = test_label[:size]
+
+    # sample test
     for _ in range(0, n):
         np.random.seed(seed)
-        np.random.shuffle(test_image)
-        shadow_test_image.append(test_image[:size])
+        np.random.shuffle(shadow_image_pool)
+        shadow_test_image.append(shadow_image_pool[:size])
         np.random.seed(seed)
-        np.random.shuffle(test_label)
-        shadow_test_label.append((test_label[:size]))
-    return shadow_test_image, shadow_test_label
+        np.random.shuffle(shadow_label_pool)
+        shadow_test_label.append((shadow_label_pool[:size]))
+    return target_test_image, target_test_label, shadow_test_image, shadow_test_label
 
 
 def visualize_training(history, epochs):
@@ -145,6 +157,28 @@ def train_attack(shadow_models, train_image_pool, train_label_pool, test_image_p
     return models_per_class
 
 
+def test_attack_model(target_model, models_per_class, image_train, label_train, image_test, label_test):
+    vectors_by_class = defaultdict(lambda: [])
+    labels_by_class = defaultdict(lambda: [])
+
+    # make predictions on train and test data
+    train_prediction = target_model.predict(image_train)
+    test_prediction = target_model.predict(image_test)
+
+    # sort data by classes
+    for i, prediction in enumerate(train_prediction):
+        vectors_by_class[label_train[i]].append(prediction)
+        labels_by_class[label_train[i]].append(1)
+    for i, prediction in enumerate(test_prediction):
+        vectors_by_class[label_test[i]].append(prediction)
+        labels_by_class[label_test[i]].append(0)
+
+    # evaluate models
+    for i, model in enumerate(models_per_class):
+        test_loss, test_acc = model.evaluate(np.array(vectors_by_class[i]), np.array(labels_by_class[i]), verbose=2)
+        print(f'\nTest accuracy for label {i}: {test_acc}')
+
+
 if __name__ == '__main__':
     train_image, train_label, test_image, test_label = load_mnist()
     train_image = train_image / 255.0
@@ -152,11 +186,13 @@ if __name__ == '__main__':
     print(train_image.shape[1:])
     input_shape = train_image.shape[1:]
     target_image_train, target_label_train, shadow_image_train, shadow_label_train = split_train_data(train_image, train_label, 10000, 50)
-    shadow_image_test, shadow_label_test = split_test_data(test_image, test_label, 3000, 50)
-    # baseline_target(input_shape, 8, target_image_train, target_label_train, test_image, test_label)
+    target_image_test, target_label_test, shadow_image_test, shadow_label_test = split_test_data(test_image, test_label, 10000, 50)
+    target_model = baseline_target(input_shape, 8, target_image_train, target_label_train, test_image, test_label)
     shadow_models = baseline_shadow(input_shape, 8, shadow_image_train, shadow_label_train)
     print('Training the attack model:')
-    train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
+    attack_model = train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
+    print('Evaluating the attack model:\n')
+    test_attack_model(target_model, attack_model, target_image_train, target_label_train, target_image_test, target_label_test)
     # info = tfds.builder('mnist').info
     # print(test)
     # fig = tfds.show_examples(train, info)
