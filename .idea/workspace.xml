@@ -16,8 +16,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="182">
-              <caret line="156" column="59" selection-start-line="156" selection-start-column="59" selection-end-line="156" selection-end-column="59" />
+            <state relative-caret-position="73">
+              <caret line="157" column="54" selection-start-line="157" selection-start-column="35" selection-end-line="157" selection-end-column="54" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
                 <element signature="e#454#1318#0" />
@@ -52,7 +52,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="7">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="width" value="1275" />
     <option name="height" value="681" />
   </component>
@@ -69,6 +69,11 @@
             <path>
               <item name="implementation" type="b2602c69:ProjectViewProjectNode" />
               <item name="implementation" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="implementation" type="b2602c69:ProjectViewProjectNode" />
+              <item name="implementation" type="462c0819:PsiDirectoryNode" />
+              <item name="models" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -141,7 +146,7 @@
       <window_info id="Favorites" order="2" sideWeight="0.50152904" side_tool="true" weight="0.2494043" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32978722" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.47695035" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.35106382" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -158,8 +163,8 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="182">
-          <caret line="156" column="59" selection-start-line="156" selection-start-column="59" selection-end-line="156" selection-end-column="59" />
+        <state relative-caret-position="73">
+          <caret line="157" column="54" selection-start-line="157" selection-start-column="35" selection-end-line="157" selection-end-column="54" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
             <element signature="e#454#1318#0" />

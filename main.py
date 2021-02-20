@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, datasets
+from tensorflow.keras import layers, models, datasets, callbacks
 import tensorflow_datasets as tfds
 from tensorflow_privacy.privacy.optimizers import dp_optimizer_keras
 from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
@@ -7,7 +7,25 @@ from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
+from absl import flags
+import os
 
+
+flags.DEFINE_boolean(
+    'dpsgd', True, 'If True, train with DP-SGD. If False, '
+    'train with vanilla SGD.')
+flags.DEFINE_float('learning_rate', 0.25, 'Learning rate for training')
+flags.DEFINE_float('noise_multiplier', 1.3,
+                   'Ratio of the standard deviation to the clipping norm')
+flags.DEFINE_float('l2_norm_clip', 1.5, 'Clipping norm')
+flags.DEFINE_integer('batch_size', 250, 'Batch size')
+flags.DEFINE_integer('epochs', 60, 'Number of epochs')
+flags.DEFINE_integer(
+    'microbatches', 250, 'Number of microbatches '
+    '(must evenly divide batch_size)')
+flags.DEFINE_string('model_dir', None, 'Model directory')
+
+FLAGS = flags.FLAGS
 
 def load_mnist():
     # load data
@@ -113,7 +131,7 @@ def compile_baseline(input_shape):
     model.add(layers.Dense(10))
 
     model.compile(optimizer='adam',
-                  loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                  loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
     return model
 
@@ -151,7 +169,16 @@ def compile_dp(input_shape):
 
 
 def evaluate_dp(model, epochs, batch_size, train_image, train_label, test_image, test_label):
-    model.fit(train_image, train_label, epochs=epochs, batch_size=batch_size)
+    checkpoint_path = "models/training_dp0/cp.ckpt"
+    # checkpoint_dir = os.path.dirname(checkpoint_path)
+
+    # Create a callback that saves the model's weights
+    cp_callback = callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                            save_weights_only=True,
+                                            verbose=1)
+
+    model.fit(train_image, train_label, epochs=epochs, batch_size=batch_size, callbacks=[cp_callback])
+    model.save('models/dp0')
     test_loss, test_acc = model.evaluate(test_image, test_label, verbose=2)
     print(f'\nTest accuracy: {test_acc}')
     eps = compute_epsilon(epochs * 60000 // batch_size, 1.3, batch_size)
@@ -164,6 +191,7 @@ def baseline_target(input_shape, epochs, train_image, train_label, test_image, t
     visualize_training(history, epochs)
     test_loss, test_acc = model.evaluate(test_image, test_label, verbose=2)
     print(f'\nTest accuracy: {test_acc}')
+    model.save('models/baseline')
     probability_model = tf.keras.Sequential([model, layers.Softmax()])
 
     return probability_model
@@ -252,7 +280,8 @@ if __name__ == '__main__':
 
     dp_model = compile_dp(input_shape)
     print("Model compiled")
-    evaluate_dp(dp_model, 5, 250, train_image, train_label, test_image, test_label)
+    evaluate_dp(dp_model, 60, 250, target_image_train, target_label_train, target_image_test, target_label_test)
+
     # info = tfds.builder('mnist').info
     # print(test)
     # fig = tfds.show_examples(train, info)
