@@ -1,6 +1,9 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models, datasets
 import tensorflow_datasets as tfds
+from tensorflow_privacy.privacy.optimizers import dp_optimizer_keras
+from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
+from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
@@ -8,7 +11,19 @@ from collections import defaultdict
 
 def load_mnist():
     # load data
-    (train_image, train_label), (test_image, test_label) = datasets.mnist.load_data()
+    (train_image, train_label), (test_image, test_label) = datasets.fashion_mnist.load_data()
+
+    train_image = np.array(train_image, dtype=np.float32) / 255
+    test_image = np.array(test_image, dtype=np.float32) / 255
+
+    train_image = train_image.reshape((train_image.shape[0], 28, 28, 1))
+    test_image = test_image.reshape((test_image.shape[0], 28, 28, 1))
+
+    train_label = np.array(train_label, dtype=np.int32)
+    test_label = np.array(test_label, dtype=np.int32)
+
+    train_label = tf.keras.utils.to_categorical(train_label, num_classes=10)
+    test_label = tf.keras.utils.to_categorical(test_label, num_classes=10)
 
     return train_image, train_label, test_image, test_label
 
@@ -94,13 +109,53 @@ def visualize_training(history, epochs):
 def compile_baseline(input_shape):
     model = models.Sequential()
     model.add(layers.Flatten(input_shape=input_shape))
-    model.add(layers.Dense(128, activation='relu'))
+    model.add(layers.Dense(1000, activation='relu'))
     model.add(layers.Dense(10))
 
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                   metrics=['accuracy'])
     return model
+
+
+def compute_epsilon(steps, noise_multiplier, batch_size):
+  """Computes epsilon value for given hyperparameters."""
+  if noise_multiplier == 0.0:
+    return float('inf')
+  orders = [1 + x / 10. for x in range(1, 100)] + list(range(12, 64))
+  sampling_probability = batch_size / 60000
+  rdp = compute_rdp(q=sampling_probability,
+                    noise_multiplier=noise_multiplier,
+                    steps=steps,
+                    orders=orders)
+  return get_privacy_spent(orders, rdp, target_delta=1e-5)[0]
+
+
+def compile_dp(input_shape):
+    model = models.Sequential()
+    model.add(layers.Flatten(input_shape=input_shape))
+    model.add(layers.Dense(1000, activation='relu'))
+    model.add(layers.Dense(10))
+
+    optimizer = dp_optimizer_keras.DPKerasSGDOptimizer(
+        l2_norm_clip=1.5,
+        noise_multiplier=1.3,
+        num_microbatches=250,
+        learning_rate=0.25)
+
+
+    model.compile(optimizer=optimizer,
+                  loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True, reduction=tf.losses.Reduction.NONE),
+                  metrics=['accuracy'])
+    return model
+
+
+def evaluate_dp(model, epochs, batch_size, train_image, train_label, test_image, test_label):
+    model.fit(train_image, train_label, epochs=epochs, batch_size=batch_size)
+    test_loss, test_acc = model.evaluate(test_image, test_label, verbose=2)
+    print(f'\nTest accuracy: {test_acc}')
+    eps = compute_epsilon(epochs * 60000 // batch_size, 1.3, batch_size)
+    print('For delta=1e-5, the current epsilon is: %.2f' % eps)
 
 
 def baseline_target(input_shape, epochs, train_image, train_label, test_image, test_label):
@@ -147,12 +202,12 @@ def train_attack(shadow_models, train_image_pool, train_label_pool, test_image_p
     models_per_class = []
     for i in range(0, 10):
         model = models.Sequential()
-        model.add(layers.Dense(30, input_dim=10, activation='relu'))
+        model.add(layers.Dense(60, input_dim=10, activation='relu'))
         model.add(layers.Dense(1, activation='sigmoid'))
         model.compile(optimizer='adam',
                       loss='binary_crossentropy',
                       metrics=['accuracy'])
-        model.fit(np.array(train_vectors_by_class[i]), np.array(train_labels_by_class[i]), epochs=10)
+        model.fit(np.array(train_vectors_by_class[i]), np.array(train_labels_by_class[i]), epochs=30)
         models_per_class.append(model)
     return models_per_class
 
@@ -181,18 +236,23 @@ def test_attack_model(target_model, models_per_class, image_train, label_train, 
 
 if __name__ == '__main__':
     train_image, train_label, test_image, test_label = load_mnist()
-    train_image = train_image / 255.0
-    test_image = test_image / 255.0
+    # train_image = train_image / 255.0
+    # test_image = test_image / 255.0
     print(train_image.shape[1:])
     input_shape = train_image.shape[1:]
     target_image_train, target_label_train, shadow_image_train, shadow_label_train = split_train_data(train_image, train_label, 10000, 50)
     target_image_test, target_label_test, shadow_image_test, shadow_label_test = split_test_data(test_image, test_label, 10000, 50)
-    target_model = baseline_target(input_shape, 8, target_image_train, target_label_train, test_image, test_label)
-    shadow_models = baseline_shadow(input_shape, 8, shadow_image_train, shadow_label_train)
-    print('Training the attack model:')
-    attack_model = train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
-    print('Evaluating the attack model:\n')
-    test_attack_model(target_model, attack_model, target_image_train, target_label_train, target_image_test, target_label_test)
+
+    # target_model = baseline_target(input_shape, 20, target_image_train, target_label_train, test_image, test_label)
+    # shadow_models = baseline_shadow(input_shape, 20, shadow_image_train, shadow_label_train)
+    # print('Training the attack model:')
+    # attack_model = train_attack(shadow_models, shadow_image_train, shadow_label_train, shadow_image_test, shadow_label_test)
+    # print('Evaluating the attack model:\n')
+    # test_attack_model(target_model, attack_model, target_image_train, target_label_train, target_image_test, target_label_test)
+
+    dp_model = compile_dp(input_shape)
+    print("Model compiled")
+    evaluate_dp(dp_model, 5, 250, train_image, train_label, test_image, test_label)
     # info = tfds.builder('mnist').info
     # print(test)
     # fig = tfds.show_examples(train, info)
