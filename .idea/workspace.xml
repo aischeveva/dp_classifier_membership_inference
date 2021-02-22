@@ -16,18 +16,16 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="73">
-              <caret line="157" column="54" selection-start-line="157" selection-start-column="35" selection-end-line="157" selection-end-column="54" />
+            <state relative-caret-position="-1111">
+              <caret line="216" column="47" selection-start-line="216" selection-start-column="47" selection-end-line="216" selection-end-column="47" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
-                <element signature="e#454#1318#0" />
+                <element signature="e#224#390#0" />
                 <element signature="e#1379#2190#0" />
                 <element signature="e#2238#2934#0" />
-                <element signature="e#2976#3324#0" />
-                <element signature="e#3423#3806#0" />
-                <element signature="e#3879#4250#0" />
-                <element signature="e#4360#5819#0" />
-                <element signature="e#5931#6780#0" />
+                <element signature="e#4831#5303#0" />
+                <element signature="e#3377#3726#0" />
+                <element signature="e#6055#6831#0" />
               </folding>
             </state>
           </provider>
@@ -139,14 +137,13 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49847096" visible="true" weight="0.2494043" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" sideWeight="0.50152904" side_tool="true" weight="0.2494043" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32978722" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.35106382" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.75" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -163,18 +160,16 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="73">
-          <caret line="157" column="54" selection-start-line="157" selection-start-column="35" selection-end-line="157" selection-end-column="54" />
+        <state relative-caret-position="-1111">
+          <caret line="216" column="47" selection-start-line="216" selection-start-column="47" selection-end-line="216" selection-end-column="47" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
-            <element signature="e#454#1318#0" />
+            <element signature="e#224#390#0" />
             <element signature="e#1379#2190#0" />
             <element signature="e#2238#2934#0" />
-            <element signature="e#2976#3324#0" />
-            <element signature="e#3423#3806#0" />
-            <element signature="e#3879#4250#0" />
-            <element signature="e#4360#5819#0" />
-            <element signature="e#5931#6780#0" />
+            <element signature="e#4831#5303#0" />
+            <element signature="e#3377#3726#0" />
+            <element signature="e#6055#6831#0" />
           </folding>
         </state>
       </provider>
